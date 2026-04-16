@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - ADMIN_CHAT_ID=${ADMIN_CHAT_ID}
+    volumes:
+      - ./data:/app/data
+      - ./public/uploads:/app/public/uploads
+    restart: unless-stopped
+
+  bot:
+    build: .
+    command: node bot.js
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - MINI_APP_URL=${MINI_APP_URL}
+      - ADMIN_CHAT_ID=${ADMIN_CHAT_ID}
+    restart: unless-stopped
+    depends_on:
+      - server

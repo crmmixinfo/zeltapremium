@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Zelta Premium</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #1a1a1f;
+      --bg-secondary: #232329;
+      --bg-card: #2a2a32;
+      --bg-card-hover: #32323c;
+      --gold: #c9a96e;
+      --gold-light: #d4b87a;
+      --gold-muted: rgba(201, 169, 110, 0.15);
+      --gold-border: rgba(201, 169, 110, 0.25);
+      --text-primary: #f5f0e8;
+      --text-secondary: #a09a8e;
+      --text-muted: #6b6760;
+      --border: rgba(255, 255, 255, 0.06);
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .screen {
+      display: none;
+      padding: 20px 20px 100px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 20px 8px;
+      gap: 6px;
+    }
+
+    .progress-dot {
+      width: 100%;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      transition: background 0.3s ease;
+    }
+
+    .progress-dot.active {
+      background: var(--gold);
+    }
+
+    .progress-dot.completed {
+      background: rgba(201, 169, 110, 0.4);
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
+    /* Language switcher */
+    .lang-switcher {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin: 12px auto 20px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      padding: 3px;
+      width: fit-content;
+      border: 1px solid var(--border);
+    }
+
+    .lang-btn {
+      padding: 8px 24px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .lang-btn.active {
+      background: var(--gold);
+      color: var(--bg-primary);
+      font-weight: 600;
+    }
+
+    /* Logo */
+    .logo-container {
+      text-align: center;
+      padding: 16px 0 20px;
+    }
+
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .logo-subtitle {
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+
+    .logo-small .logo-text {
+      font-size: 20px;
+      letter-spacing: 2px;
+    }
+
+    .logo-small .logo-subtitle {
+      font-size: 9px;
+      letter-spacing: 4px;
+    }
+
+    /* Headings */
+    .heading {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+
+    .subtext {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* Cards */
+    .info-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .info-card:active {
+      background: var(--bg-card-hover);
+      transform: scale(0.98);
+    }
+
+    .info-card.no-action {
+      cursor: default;
+    }
+
+    .info-card.no-action:active {
+      transform: none;
+      background: var(--bg-card);
+    }
+
+    .info-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gold-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .info-card-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--gold);
+    }
+
+    .info-card-content {
+      flex: 1;
+    }
+
+    .info-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .info-card-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .info-card-arrow {
+      color: var(--text-muted);
+      font-size: 18px;
+    }
+
+    /* Social row */
+    .social-row {
+      display: flex;
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .social-item {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .social-item:active {
+      background: var(--bg-card-hover);
+      transform: scale(0.98);
+    }
+
+    .social-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .social-icon.instagram {
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    }
+
+    .social-icon.telegram {
+      background: #2AABEE;
+    }
+
+    .social-icon svg {
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+
+    .social-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Trust line */
+    .trust-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 0;
+      margin: 8px 0;
+    }
+
+    .trust-line svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-muted);
+    }
+
+    .trust-line span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* CTA Button */
+    .cta-button {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 20px;
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+      z-index: 100;
+    }
+
+    .cta-button button {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: block;
+      padding: 16px 32px;
+      background: var(--gold);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+    }
+
+    .cta-button button:active {
+      transform: scale(0.98);
+      background: var(--gold-light);
+    }
+
+    .cta-button button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Screen 2 - Offer */
+    .counter-block {
+      background: var(--gold-muted);
+      border: 1px solid var(--gold-border);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .counter-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .counter-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+
+    .process-steps {
+      margin: 24px 0;
+    }
+
+    .process-step-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .process-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 0;
+    }
+
+    .process-step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gold-muted);
+      border: 1px solid var(--gold-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .process-step-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      padding-top: 5px;
+      line-height: 1.5;
+    }
+
+    /* Screen 3 - Photo upload */
+    .photo-tips {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .photo-tip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .photo-tip svg {
+      width: 16px;
+      height: 16px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .photo-slot {
+      aspect-ratio: 3/4;
+      background: var(--bg-card);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .photo-slot:active {
+      border-color: var(--gold-border);
+    }
+
+    .photo-slot.filled {
+      border: 2px solid var(--gold-border);
+    }
+
+    .photo-slot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .photo-slot-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .photo-slot-icon {
+      color: var(--text-muted);
+    }
+
+    .photo-slot .replace-btn {
+      position: absolute;
+      bottom: 6px;
+      right: 6px;
+      background: rgba(0,0,0,0.7);
+      color: var(--gold);
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .photo-error {
+      color: #e74c3c;
+      font-size: 13px;
+      text-align: center;
+      margin: 8px 0;
+      display: none;
+    }
+
+    .photo-error.visible {
+      display: block;
+    }
+
+    /* Screen 4 - Phone */
+    .phone-input-wrapper {
+      margin: 24px 0;
+    }
+
+    .phone-input-container {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      transition: border-color 0.2s ease;
+    }
+
+    .phone-input-container:focus-within {
+      border-color: var(--gold-border);
+    }
+
+    .phone-prefix {
+      padding: 14px 12px 14px 16px;
+      font-size: 16px;
+      color: var(--text-primary);
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .phone-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 16px;
+      padding: 14px 16px 14px 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .phone-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .phone-privacy {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 0 4px;
+    }
+
+    .phone-privacy svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .phone-privacy span {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .phone-error {
+      color: #e74c3c;
+      font-size: 13px;
+      margin-top: 8px;
+      padding: 0 4px;
+      display: none;
+    }
+
+    .phone-error.visible {
+      display: block;
+    }
+
+    /* Screen 5 - Qualification */
+    .qual-section {
+      margin: 20px 0;
+    }
+
+    .qual-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .qual-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .qual-option {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .qual-option:active {
+      transform: scale(0.97);
+    }
+
+    .qual-option.selected {
+      border-color: var(--gold);
+      background: var(--gold-muted);
+      color: var(--gold);
+      font-weight: 500;
+    }
+
+    .skip-btn {
+      display: block;
+      margin: 16px auto 0;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 8px 16px;
+      font-family: 'Inter', sans-serif;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Screen 6 - Success */
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--gold-muted);
+      border: 2px solid var(--gold-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 24px auto;
+    }
+
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--gold);
+    }
+
+    .success-message {
+      font-size: 15px;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.6;
+      margin: 16px 0 32px;
+    }
+
+    .success-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 24px 0;
+    }
+
+    .success-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      font-family: 'Inter', sans-serif;
+      border: none;
+    }
+
+    .success-btn:active {
+      transform: scale(0.98);
+    }
+
+    .success-btn.primary {
+      background: var(--gold);
+      color: var(--bg-primary);
+    }
+
+    .success-btn.secondary {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    .success-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .success-footer {
+      text-align: center;
+      padding: 32px 0 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-dot active" id="dot1"></div>
+      <div class="progress-dot" id="dot2"></div>
+      <div class="progress-dot" id="dot3"></div>
+      <div class="progress-dot" id="dot4"></div>
+      <div class="progress-dot" id="dot5"></div>
+      <div class="progress-dot" id="dot6"></div>
+      <span class="progress-label" id="progressLabel">1/6</span>
+    </div>
+
+    <!-- ========== SCREEN 1: Landing ========== -->
+    <div class="screen active" id="screen1">
+      <!-- Language Switcher -->
+      <div class="lang-switcher">
+        <button class="lang-btn active" id="langUz" onclick="setLanguage('uz')">O'zbek</button>
+        <button class="lang-btn" id="langRu" onclick="setLanguage('ru')">Русский</button>
+      </div>
+
+      <!-- Logo -->
+      <div class="logo-container">
+        <div class="logo-text">ZELTA</div>
+        <div class="logo-subtitle">PREMIUM</div>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="heading" data-i18n="headline"></h1>
+      <p class="subtext" data-i18n="subtext"></p>
+
+      <!-- Call Card -->
+      <a href="tel:+998555209595" class="info-card" id="callCard">
+        <div class="info-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
+        <div class="info-card-content">
+          <div class="info-card-title" data-i18n="callCardTitle"></div>
+          <div class="info-card-subtitle" data-i18n="callCardSubtitle"></div>
+        </div>
+        <div class="info-card-arrow">›</div>
+      </a>
+
+      <!-- Showroom Card -->
+      <div class="info-card no-action">
+        <div class="info-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        </div>
+        <div class="info-card-content">
+          <div class="info-card-title" data-i18n="showroomTitle"></div>
+          <div class="info-card-subtitle" data-i18n="showroomSubtitle"></div>
+        </div>
+      </div>
+
+      <!-- Social Row -->
+      <div class="social-row">
+        <a href="https://www.instagram.com/zeltapremium.uz?igsh=MWRjNDZ6ZnkyenR1MQ==" target="_blank" class="social-item">
+          <div class="social-icon instagram">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+          </div>
+          <span class="social-label">@zeltapremium.uz</span>
+        </a>
+        <a href="https://t.me/zeltacallcenter?text=Assalomu%20alaykum%20showroom%20lokatsiyasini%20yuborin" target="_blank" class="social-item">
+          <div class="social-icon telegram">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          </div>
+          <span class="social-label">@zeltacallcenter</span>
+        </a>
+      </div>
+
+      <!-- Trust Line -->
+      <div class="trust-line">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span data-i18n="trustLine"></span>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN 2: Offer ========== -->
+    <div class="screen" id="screen2">
+      <div class="logo-container logo-small">
+        <div class="logo-text">ZELTA</div>
+        <div class="logo-subtitle">PREMIUM</div>
+      </div>
+
+      <h1 class="heading" data-i18n="offerTitle"></h1>
+
+      <div class="counter-block">
+        <div class="counter-number" id="counterNumber">36</div>
+        <div class="counter-label" data-i18n="offerCounter" data-i18n-param="36"></div>
+      </div>
+
+      <p class="subtext" data-i18n="offerDesc" style="margin-bottom: 16px;"></p>
+
+      <div class="divider"></div>
+
+      <div class="process-steps">
+        <div class="process-step-title" data-i18n="processTitle"></div>
+        <div class="process-step">
+          <div class="process-step-num">1</div>
+          <div class="process-step-text" data-i18n="processStep1"></div>
+        </div>
+        <div class="process-step">
+          <div class="process-step-num">2</div>
+          <div class="process-step-text" data-i18n="processStep2"></div>
+        </div>
+        <div class="process-step">
+          <div class="process-step-num">3</div>
+          <div class="process-step-text" data-i18n="processStep3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN 3: Photo Upload ========== -->
+    <div class="screen" id="screen3">
+      <h1 class="heading" data-i18n="photoTitle"></h1>
+      <p class="subtext" data-i18n="photoSubtitle"></p>
+
+      <div class="photo-tips">
+        <div class="photo-tip">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <span data-i18n="photoTip1"></span>
+        </div>
+        <div class="photo-tip">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+          <span data-i18n="photoTip2"></span>
+        </div>
+        <div class="photo-tip">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span data-i18n="photoTip3"></span>
+        </div>
+      </div>
+
+      <div class="photo-grid">
+        <div class="photo-slot" id="photoSlot1" onclick="triggerPhotoUpload(1)">
+          <svg class="photo-slot-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span class="photo-slot-label"><span data-i18n="photoSlot"></span> 1</span>
+        </div>
+        <div class="photo-slot" id="photoSlot2" onclick="triggerPhotoUpload(2)">
+          <svg class="photo-slot-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span class="photo-slot-label"><span data-i18n="photoSlot"></span> 2</span>
+        </div>
+        <div class="photo-slot" id="photoSlot3" onclick="triggerPhotoUpload(3)">
+          <svg class="photo-slot-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span class="photo-slot-label"><span data-i18n="photoSlot"></span> 3</span>
+        </div>
+      </div>
+
+      <div class="photo-error" id="photoError" data-i18n="photoRequired"></div>
+
+      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+    </div>
+
+    <!-- ========== SCREEN 4: Phone ========== -->
+    <div class="screen" id="screen4">
+      <h1 class="heading" data-i18n="phoneTitle"></h1>
+      <p class="subtext" data-i18n="phoneSubtitle"></p>
+
+      <div class="phone-input-wrapper">
+        <div class="phone-input-container">
+          <span class="phone-prefix">+998</span>
+          <input type="tel" class="phone-input" id="phoneInput" maxlength="12" placeholder="__ ___ __ __" oninput="formatPhone(this)">
+        </div>
+        <div class="phone-privacy">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span data-i18n="phonePrivacy"></span>
+        </div>
+        <div class="phone-error" id="phoneError" data-i18n="phoneInvalid"></div>
+      </div>
+    </div>
+
+    <!-- ========== SCREEN 5: Qualification ========== -->
+    <div class="screen" id="screen5">
+      <h1 class="heading" data-i18n="qualTitle"></h1>
+      <p class="subtext" data-i18n="qualSubtitle"></p>
+
+      <div class="qual-section">
+        <div class="qual-label" data-i18n="qualFurniture"></div>
+        <div class="qual-options" id="furnitureOptions">
+          <div class="qual-option" data-value="bedroom" onclick="selectOption(this, 'furniture')" data-i18n="qualBedroom"></div>
+          <div class="qual-option" data-value="living" onclick="selectOption(this, 'furniture')" data-i18n="qualLiving"></div>
+          <div class="qual-option" data-value="dining" onclick="selectOption(this, 'furniture')" data-i18n="qualDining"></div>
+          <div class="qual-option" data-value="other" onclick="selectOption(this, 'furniture')" data-i18n="qualOther"></div>
+        </div>
+      </div>
+
+      <div class="qual-section">
+        <div class="qual-label" data-i18n="qualRoomType"></div>
+        <div class="qual-options" id="roomOptions">
+          <div class="qual-option" data-value="new" onclick="selectOption(this, 'room')" data-i18n="qualRoomNew"></div>
+          <div class="qual-option" data-value="renovation" onclick="selectOption(this, 'room')" data-i18n="qualRoomRenovation"></div>
+          <div class="qual-option" data-value="existing" onclick="selectOption(this, 'room')" data-i18n="qualRoomExisting"></div>
+        </div>
+      </div>
+
+      <button class="skip-btn" onclick="skipQualification()" data-i18n="qualSkip"></button>
+    </div>
+
+    <!-- ========== SCREEN 6: Success ========== -->
+    <div class="screen" id="screen6">
+      <div class="logo-container logo-small" style="padding-top: 24px;">
+        <div class="logo-text">ZELTA</div>
+        <div class="logo-subtitle">PREMIUM</div>
+      </div>
+
+      <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+
+      <h1 class="heading" data-i18n="successTitle"></h1>
+      <p class="success-message" data-i18n="successMessage"></p>
+
+      <div class="success-actions">
+        <a href="https://www.instagram.com/zeltapremium.uz?igsh=MWRjNDZ6ZnkyenR1MQ==" target="_blank" class="success-btn secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+          <span data-i18n="successPortfolio"></span>
+        </a>
+        <a href="tel:+998555209595" class="success-btn primary">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+          <span data-i18n="successCall"></span>
+        </a>
+      </div>
+
+      <div class="success-footer" data-i18n="successThank"></div>
+    </div>
+
+    <!-- Fixed CTA Button -->
+    <div class="cta-button" id="ctaContainer">
+      <button id="ctaBtn" onclick="handleCTA()"></button>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

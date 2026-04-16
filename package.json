@@ -1,0 +1,17 @@
+{
+  "name": "zelta-premium",
+  "version": "1.0.0",
+  "description": "Zelta Premium - Telegram Mini App Lead Funnel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "bot": "node bot.js",
+    "dev": "node server.js & node bot.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "sql.js": "^1.10.2",
+    "node-telegram-bot-api": "^0.64.0"
+  }
+}
