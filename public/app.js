@@ -133,8 +133,8 @@ try {
   if (tg) {
     tg.ready();
     tg.expand();
-    tg.setHeaderColor('#1a1a1f');
-    tg.setBackgroundColor('#1a1a1f');
+    tg.setHeaderColor('#0a0a0a');
+    tg.setBackgroundColor('#0a0a0a');
     
     // Get user data
     if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
