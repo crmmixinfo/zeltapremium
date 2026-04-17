@@ -85,6 +85,19 @@ async function initDB() {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS analytics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_type TEXT NOT NULL,
+      telegram_user_id TEXT,
+      screen_number INTEGER,
+      language TEXT,
+      timestamp TEXT NOT NULL,
+      session_id TEXT,
+      metadata TEXT
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS lead_status_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       lead_id TEXT NOT NULL,
@@ -159,6 +172,72 @@ function dbRun(sql, params = []) {
     console.error('[Zelta] DB run error:', e);
   }
 }
+
+// --- API: Track Analytics Event ---
+app.post('/api/analytics', (req, res) => {
+  try {
+    const { event_type, telegram_user_id, screen_number, language, session_id, metadata } = req.body;
+    const now = new Date().toISOString();
+    dbRun(
+      'INSERT INTO analytics (event_type, telegram_user_id, screen_number, language, timestamp, session_id, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [event_type || 'unknown', telegram_user_id || null, screen_number || null, language || null, now, session_id || null, metadata ? JSON.stringify(metadata) : null]
+    );
+    saveDB();
+    res.json({ success: true });
+  } catch(e) {
+    console.error('[Zelta] Analytics error:', e);
+    res.status(500).json({ error: 'Analytics error' });
+  }
+});
+
+// --- API: Get Funnel Analytics ---
+app.get('/api/analytics/funnel', (req, res) => {
+  try {
+    const screenViews = dbAll(`
+      SELECT screen_number, COUNT(DISTINCT COALESCE(telegram_user_id, session_id)) as unique_users
+      FROM analytics
+      WHERE event_type = 'screen_view'
+      GROUP BY screen_number
+      ORDER BY screen_number
+    `);
+
+    const totalStarts = dbGet("SELECT COUNT(DISTINCT COALESCE(telegram_user_id, session_id)) as count FROM analytics WHERE event_type = 'screen_view' AND screen_number = 1");
+    const totalCompleted = dbGet("SELECT COUNT(*) as count FROM leads");
+    const todayStarts = dbGet("SELECT COUNT(DISTINCT COALESCE(telegram_user_id, session_id)) as count FROM analytics WHERE event_type = 'screen_view' AND screen_number = 1 AND date(timestamp) = date('now')");
+    const todayCompleted = dbGet("SELECT COUNT(*) as count FROM leads WHERE date(created_at) = date('now')");
+
+    // Counter: 50 - completed leads
+    const completedCount = totalCompleted ? totalCompleted.count : 0;
+    const remainingSlots = Math.max(0, 50 - completedCount);
+    const currentPosition = Math.min(completedCount + 1, 50);
+
+    res.json({
+      funnel: screenViews.reduce((acc, r) => { acc['screen_' + r.screen_number] = r.unique_users; return acc; }, {}),
+      total_starts: totalStarts ? totalStarts.count : 0,
+      total_completed: completedCount,
+      today_starts: todayStarts ? todayStarts.count : 0,
+      today_completed: todayCompleted ? todayCompleted.count : 0,
+      remaining_slots: remainingSlots,
+      current_position: currentPosition
+    });
+  } catch(e) {
+    console.error('[Zelta] Funnel analytics error:', e);
+    res.status(500).json({ error: 'Analytics error' });
+  }
+});
+
+// --- API: Get Counter for Mini App ---
+app.get('/api/counter', (req, res) => {
+  try {
+    const totalCompleted = dbGet("SELECT COUNT(*) as count FROM leads");
+    const completedCount = totalCompleted ? totalCompleted.count : 0;
+    const position = Math.min(completedCount + 1, 50);
+    const remaining = Math.max(0, 50 - completedCount);
+    res.json({ position, remaining, total: 50, completed: completedCount });
+  } catch(e) {
+    res.json({ position: 36, remaining: 14, total: 50, completed: 36 });
+  }
+});
 
 // --- API: Submit Lead ---
 app.post('/api/leads', upload.fields([

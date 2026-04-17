@@ -222,6 +222,7 @@
 
   <!-- Tabs -->
   <div class="tabs">
+    <div class="tab" data-tab="dashboard" onclick="switchTab('dashboard',this)">Dashboard</div>
     <div class="tab active" data-tab="pipeline" onclick="switchTab('pipeline',this)">Voronka</div>
     <div class="tab" data-tab="table" onclick="switchTab('table',this)">Jadval</div>
   </div>
@@ -233,6 +234,62 @@
     <div class="stat-card"><div class="stat-label">Yangi</div><div class="stat-value" id="statNew" style="color:var(--blue)">—</div></div>
     <div class="stat-card"><div class="stat-label">SLA 20 daq</div><div class="stat-value" id="statSLA">—</div></div>
     <div class="stat-card"><div class="stat-label">Sotildi</div><div class="stat-value" id="statClosed" style="color:var(--green)">—</div></div>
+  </div>
+
+  <!-- ===== DASHBOARD TAB ===== -->
+  <div class="tab-content" id="tab-dashboard">
+    <div style="padding:20px 24px">
+      <!-- Funnel Overview -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+        <div class="stat-card"><div class="stat-label">/start bosganlar</div><div class="stat-value gold" id="funnelStarts">—</div></div>
+        <div class="stat-card"><div class="stat-label">Taklif ko'rdi (2)</div><div class="stat-value" id="funnelScreen2" style="color:var(--blue)">—</div></div>
+        <div class="stat-card"><div class="stat-label">Rasm yukladi (3)</div><div class="stat-value" id="funnelScreen3" style="color:var(--purple)">—</div></div>
+        <div class="stat-card"><div class="stat-label">Telefon kiritdi (4)</div><div class="stat-value" id="funnelScreen4" style="color:var(--cyan)">—</div></div>
+        <div class="stat-card"><div class="stat-label">Mebel tanladi (5)</div><div class="stat-value" id="funnelScreen5" style="color:var(--orange)">—</div></div>
+        <div class="stat-card"><div class="stat-label">Oxirigacha bordi (6)</div><div class="stat-value" id="funnelScreen6" style="color:var(--green)">—</div></div>
+      </div>
+
+      <!-- Funnel Bar Chart -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--gold)">Voronka — Ekranlar bo'yicha</h3>
+        <div id="funnelChart" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- Drop-off Analysis -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--gold)">Qayerda qolib ketyapti?</h3>
+        <div id="dropoffChart" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <!-- Counter Status -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px">
+        <div class="stat-card">
+          <div class="stat-label">50 tadan nechta to'ldi</div>
+          <div class="stat-value gold" id="counterCompleted">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Qolgan joy</div>
+          <div class="stat-value" id="counterRemaining" style="color:var(--green)">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bugun /start</div>
+          <div class="stat-value" id="todayStarts" style="color:var(--blue)">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bugun yakunladi</div>
+          <div class="stat-value" id="todayCompleted" style="color:var(--green)">—</div>
+        </div>
+      </div>
+
+      <!-- Conversion Rate -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+        <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--gold)">Konversiya</h3>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:48px;font-weight:700;color:var(--gold)" id="conversionRate">—</div>
+          <div style="font-size:13px;color:var(--text2)">Mini App ochganlardan<br>oxirigacha borgan foiz</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ===== PIPELINE TAB ===== -->
@@ -327,8 +384,10 @@
 
     // ===== INIT =====
     refreshAll();
+    loadFunnel();
     slaInterval = setInterval(updateAllSLATimers, 1000);
     setInterval(refreshAll, 30000);
+    setInterval(loadFunnel, 30000);
 
     // ===== TAB SWITCHING =====
     function switchTab(tab, el) {
@@ -705,6 +764,75 @@
     // ===== EXPORT =====
     function exportCSV() {
       window.open('/api/export/csv', '_blank');
+    }
+
+    // ===== FUNNEL DASHBOARD =====
+    async function loadFunnel() {
+      try {
+        const res = await fetch('/api/analytics/funnel');
+        const data = await res.json();
+        const f = data.funnel || {};
+
+        document.getElementById('funnelStarts').textContent = f.screen_1 || 0;
+        document.getElementById('funnelScreen2').textContent = f.screen_2 || 0;
+        document.getElementById('funnelScreen3').textContent = f.screen_3 || 0;
+        document.getElementById('funnelScreen4').textContent = f.screen_4 || 0;
+        document.getElementById('funnelScreen5').textContent = f.screen_5 || 0;
+        document.getElementById('funnelScreen6').textContent = f.screen_6 || 0;
+
+        document.getElementById('counterCompleted').textContent = data.total_completed + ' / 50';
+        document.getElementById('counterRemaining').textContent = data.remaining_slots;
+        document.getElementById('todayStarts').textContent = data.today_starts || 0;
+        document.getElementById('todayCompleted').textContent = data.today_completed || 0;
+
+        // Conversion rate
+        const starts = f.screen_1 || 0;
+        const completed = f.screen_6 || 0;
+        const rate = starts > 0 ? Math.round((completed / starts) * 100) : 0;
+        document.getElementById('conversionRate').textContent = rate + '%';
+
+        // Funnel bar chart
+        const screenNames = [
+          { key: 'screen_1', label: 'Bosh sahifa', color: 'var(--gold)' },
+          { key: 'screen_2', label: 'Taklif sahifasi', color: 'var(--blue)' },
+          { key: 'screen_3', label: 'Rasm yuklash', color: 'var(--purple)' },
+          { key: 'screen_4', label: 'Telefon kiritish', color: 'var(--cyan)' },
+          { key: 'screen_5', label: 'Mebel tanlash', color: 'var(--orange)' },
+          { key: 'screen_6', label: 'Muvaffaqiyat', color: 'var(--green)' }
+        ];
+
+        const maxVal = Math.max(...screenNames.map(s => f[s.key] || 0), 1);
+        document.getElementById('funnelChart').innerHTML = screenNames.map(s => {
+          const val = f[s.key] || 0;
+          const pct = Math.round((val / maxVal) * 100);
+          return `<div style="display:flex;align-items:center;gap:12px">
+            <div style="width:120px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0">${s.label}</div>
+            <div style="flex:1;background:var(--bg3);border-radius:6px;height:28px;overflow:hidden;position:relative">
+              <div style="width:${pct}%;height:100%;background:${s.color};border-radius:6px;transition:width 0.5s;min-width:${val > 0 ? '2px' : '0'}"></div>
+            </div>
+            <div style="width:40px;font-size:13px;font-weight:600;color:${s.color}">${val}</div>
+          </div>`;
+        }).join('');
+
+        // Drop-off chart
+        document.getElementById('dropoffChart').innerHTML = screenNames.slice(0, -1).map((s, i) => {
+          const current = f[s.key] || 0;
+          const next = f[screenNames[i + 1].key] || 0;
+          const dropped = current - next;
+          const dropPct = current > 0 ? Math.round((dropped / current) * 100) : 0;
+          const barColor = dropPct > 50 ? 'var(--red)' : dropPct > 30 ? 'var(--orange)' : 'var(--green)';
+          return `<div style="display:flex;align-items:center;gap:10px">
+            <div style="width:140px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0">${s.label} → ${screenNames[i+1].label}</div>
+            <div style="flex:1;background:var(--bg3);border-radius:6px;height:24px;overflow:hidden">
+              <div style="width:${dropPct}%;height:100%;background:${barColor};border-radius:6px;transition:width 0.5s"></div>
+            </div>
+            <div style="width:80px;font-size:12px;font-weight:600;color:${barColor}">${dropped} kishi (${dropPct}%)</div>
+          </div>`;
+        }).join('');
+
+      } catch(e) {
+        console.error('Funnel error:', e);
+      }
     }
 
     // ===== HELPERS =====

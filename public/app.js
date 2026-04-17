@@ -109,6 +109,34 @@ const translations = {
   }
 };
 
+// --- Session ID ---
+let sessionId = null;
+try {
+  sessionId = sessionStorage.getItem('zelta_session');
+  if (!sessionId) {
+    sessionId = 'S-' + Date.now().toString(36) + '-' + Math.random().toString(36).substr(2, 6);
+    sessionStorage.setItem('zelta_session', sessionId);
+  }
+} catch(e) { sessionId = 'S-' + Date.now().toString(36); }
+
+// --- Analytics Tracking ---
+function trackEvent(eventType, screenNumber, metadata) {
+  try {
+    fetch('/api/analytics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: eventType,
+        telegram_user_id: leadData.telegram_user_id,
+        screen_number: screenNumber,
+        language: currentLang,
+        session_id: sessionId,
+        metadata: metadata || null
+      })
+    }).catch(e => {});
+  } catch(e) {}
+}
+
 // --- State ---
 let currentScreen = 1;
 let currentLang = 'uz';
@@ -260,6 +288,9 @@ function goToScreen(num) {
   
   // Update CTA
   updateCTAButton();
+  
+  // Track screen view
+  trackEvent('screen_view', num);
   
   // Scroll to top
   window.scrollTo(0, 0);
@@ -434,6 +465,24 @@ function skipQualification() {
   submitLead();
 }
 
+// --- Dynamic Counter ---
+async function loadCounter() {
+  try {
+    const res = await fetch('/api/counter');
+    const data = await res.json();
+    const counterEl = document.getElementById('counterNumber');
+    const counterLabel = document.querySelector('[data-i18n="offerCounter"]');
+    if (counterEl) counterEl.textContent = data.position;
+    if (counterLabel) {
+      counterLabel.setAttribute('data-i18n-param', data.position);
+      const t = translations[currentLang];
+      counterLabel.textContent = t.offerCounter.replace('{n}', data.position);
+    }
+  } catch(e) {
+    console.log('[Zelta] Counter load error:', e);
+  }
+}
+
 // --- Init ---
 document.addEventListener('DOMContentLoaded', function() {
   // Restore language
@@ -444,6 +493,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Apply initial translations
   applyTranslations();
+  
+  // Load dynamic counter
+  loadCounter();
   
   // Set initial screen
   goToScreen(1);
