@@ -14,16 +14,19 @@
       --bg-secondary: #232329;
       --bg-card: #2a2a32;
       --bg-card-hover: #32323c;
-      --gold: #c9a96e;
-      --gold-light: #d4b87a;
-      --gold-muted: rgba(201, 169, 110, 0.15);
-      --gold-border: rgba(201, 169, 110, 0.25);
+      --gold: #d4a843;
+      --gold-light: #e0b94f;
+      --gold-dark: #b8922e;
+      --gold-muted: rgba(212, 168, 67, 0.18);
+      --gold-border: rgba(212, 168, 67, 0.30);
+      --gold-glow: rgba(212, 168, 67, 0.12);
       --text-primary: #f5f0e8;
-      --text-secondary: #a09a8e;
-      --text-muted: #6b6760;
+      --text-secondary: #b0a898;
+      --text-muted: #7a7468;
       --border: rgba(255, 255, 255, 0.06);
       --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.2);
+      --shadow-gold: 0 4px 20px rgba(212, 168, 67, 0.15);
     }
 
     * {
@@ -135,6 +138,16 @@
       padding: 16px 0 20px;
     }
 
+    .logo-img {
+      width: 160px;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .logo-small .logo-img {
+      width: 100px;
+    }
+
     .logo-text {
       font-family: 'Playfair Display', serif;
       font-size: 28px;
@@ -217,6 +230,7 @@
       height: 44px;
       border-radius: 12px;
       background: var(--gold-muted);
+      border: 1px solid var(--gold-border);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -330,6 +344,32 @@
       color: var(--text-muted);
     }
 
+    /* Inline CTA Button for Screen 1 */
+    .cta-inline {
+      margin: 24px 0 16px;
+    }
+
+    .cta-inline button {
+      width: 100%;
+      padding: 16px 32px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+      box-shadow: var(--shadow-gold);
+    }
+
+    .cta-inline button:active {
+      transform: scale(0.98);
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+    }
+
     /* CTA Button */
     .cta-button {
       position: fixed;
@@ -348,7 +388,7 @@
       margin: 0 auto;
       display: block;
       padding: 16px 32px;
-      background: var(--gold);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
       color: var(--bg-primary);
       border: none;
       border-radius: 14px;
@@ -358,6 +398,7 @@
       font-family: 'Inter', sans-serif;
       transition: all 0.2s ease;
       letter-spacing: 0.3px;
+      box-shadow: var(--shadow-gold);
     }
 
     .cta-button button:active {
@@ -774,35 +815,16 @@
 
       <!-- Logo -->
       <div class="logo-container">
-        <div class="logo-text">ZELTA</div>
-        <div class="logo-subtitle">PREMIUM</div>
+        <img src="/images/logo.jpg" alt="Zelta Premium" class="logo-img">
       </div>
 
       <!-- Headline -->
       <h1 class="heading" data-i18n="headline"></h1>
       <p class="subtext" data-i18n="subtext"></p>
 
-      <!-- Call Card -->
-      <a href="tel:+998555209595" class="info-card" id="callCard">
-        <div class="info-card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-        </div>
-        <div class="info-card-content">
-          <div class="info-card-title" data-i18n="callCardTitle"></div>
-          <div class="info-card-subtitle" data-i18n="callCardSubtitle"></div>
-        </div>
-        <div class="info-card-arrow">›</div>
-      </a>
-
-      <!-- Showroom Card -->
-      <div class="info-card no-action">
-        <div class="info-card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-        </div>
-        <div class="info-card-content">
-          <div class="info-card-title" data-i18n="showroomTitle"></div>
-          <div class="info-card-subtitle" data-i18n="showroomSubtitle"></div>
-        </div>
+      <!-- Main CTA Button (inline, centered) -->
+      <div class="cta-inline">
+        <button onclick="handleCTA()" data-i18n="ctaScreen1"></button>
       </div>
 
       <!-- Social Row -->
@@ -821,6 +843,18 @@
         </a>
       </div>
 
+      <!-- Operator Card (bottom) -->
+      <a href="tel:+998555209595" class="info-card" id="callCard" style="margin-top: 16px;">
+        <div class="info-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+        </div>
+        <div class="info-card-content">
+          <div class="info-card-title" data-i18n="callCardTitle"></div>
+          <div class="info-card-subtitle" data-i18n="callCardSubtitle"></div>
+        </div>
+        <div class="info-card-arrow">›</div>
+      </a>
+
       <!-- Trust Line -->
       <div class="trust-line">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -831,8 +865,7 @@
     <!-- ========== SCREEN 2: Offer ========== -->
     <div class="screen" id="screen2">
       <div class="logo-container logo-small">
-        <div class="logo-text">ZELTA</div>
-        <div class="logo-subtitle">PREMIUM</div>
+        <img src="/images/logo.jpg" alt="Zelta Premium" class="logo-img">
       </div>
 
       <h1 class="heading" data-i18n="offerTitle"></h1>
@@ -951,8 +984,7 @@
     <!-- ========== SCREEN 6: Success ========== -->
     <div class="screen" id="screen6">
       <div class="logo-container logo-small" style="padding-top: 24px;">
-        <div class="logo-text">ZELTA</div>
-        <div class="logo-subtitle">PREMIUM</div>
+        <img src="/images/logo.jpg" alt="Zelta Premium" class="logo-img">
       </div>
 
       <div class="success-icon">
