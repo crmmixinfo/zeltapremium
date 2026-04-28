@@ -509,6 +509,184 @@ function notifyAdmin(leadId, leadInfo) {
   }).catch(err => console.log('[Zelta] Notification error:', err));
 }
 
+// ===== HR DATABASE & ROUTES =====
+let hrDb = null;
+const HR_DB_PATH = path.join(DATA_DIR, 'hr.db');
+
+async function initHRDB() {
+  const SQL = await initSqlJs();
+  try {
+    if (fs.existsSync(HR_DB_PATH)) {
+      const buf = fs.readFileSync(HR_DB_PATH);
+      hrDb = new SQL.Database(buf);
+    } else {
+      hrDb = new SQL.Database();
+    }
+  } catch(e) {
+    hrDb = new SQL.Database();
+  }
+
+  hrDb.run(`CREATE TABLE IF NOT EXISTS candidates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_id TEXT UNIQUE,
+    created_at TEXT DEFAULT (datetime('now')),
+    telegram_user_id TEXT,
+    telegram_username TEXT,
+    full_name TEXT,
+    birth_year INTEGER,
+    age INTEGER,
+    phone TEXT,
+    location TEXT,
+    photo_url TEXT,
+    voice_url TEXT,
+    voice_duration INTEGER,
+    russian_level TEXT,
+    status TEXT DEFAULT 'new',
+    hr_notes TEXT DEFAULT '',
+    hr_assigned TEXT DEFAULT '',
+    contacted_at TEXT,
+    interview_date TEXT,
+    rejection_reason TEXT,
+    source TEXT DEFAULT 'telegram',
+    submitted_at TEXT DEFAULT (datetime('now'))
+  )`);
+  saveHRDB();
+  console.log('[HR DB] Initialized');
+}
+
+function saveHRDB() {
+  if (!hrDb) return;
+  try {
+    const data = hrDb.export();
+    fs.writeFileSync(HR_DB_PATH, Buffer.from(data));
+  } catch(e) { console.error('[HR DB] Save error:', e.message); }
+}
+
+setInterval(saveHRDB, 10000);
+
+function hrDbAll(sql, params = []) {
+  try {
+    const stmt = hrDb.prepare(sql);
+    if (params.length) stmt.bind(params);
+    const results = [];
+    while (stmt.step()) results.push(stmt.getAsObject());
+    stmt.free();
+    return results;
+  } catch(e) { return []; }
+}
+
+function hrDbGet(sql, params = []) {
+  const r = hrDbAll(sql, params);
+  return r.length > 0 ? r[0] : null;
+}
+
+function hrDbRun(sql, params = []) {
+  try { hrDb.run(sql, params); } catch(e) { console.error('[HR] Run error:', e); }
+}
+
+// HR Upload config
+const hrStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'public', 'hr-uploads');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || (file.mimetype.includes('image') ? '.jpg' : '.ogg');
+    cb(null, `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`);
+  }
+});
+const hrUpload = multer({ storage: hrStorage, limits: { fileSize: 20 * 1024 * 1024 } });
+
+// HR API: Submit candidate
+app.post('/api/candidates', (req, res) => {
+  try {
+    const d = req.body;
+    const candidateId = 'ZHR-' + Date.now().toString(36).toUpperCase();
+    hrDbRun(`INSERT INTO candidates (candidate_id, telegram_user_id, telegram_username, full_name, birth_year, age, phone, location, photo_url, voice_url, voice_duration, russian_level, source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+      candidateId, d.telegram_user_id||'', d.telegram_username||'', d.full_name||'', d.birth_year||null, d.age||null, d.phone||'', d.location||'', d.photo_url||'', d.voice_url||'', d.voice_duration||null, d.russian_level||'', d.source||'telegram'
+    ]);
+    saveHRDB();
+    res.json({ success: true, candidate_id: candidateId });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// HR API: Upload file
+app.post('/api/hr-upload', hrUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file' });
+  res.json({ success: true, url: `/hr-uploads/${req.file.filename}` });
+});
+
+// HR API: Get all candidates
+app.get('/api/candidates', (req, res) => {
+  try {
+    const rows = hrDbAll('SELECT * FROM candidates ORDER BY created_at DESC');
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// HR API: Get single candidate
+app.get('/api/candidates/:id', (req, res) => {
+  try {
+    const c = hrDbGet('SELECT * FROM candidates WHERE candidate_id = ?', [req.params.id]);
+    if (!c) return res.status(404).json({ error: 'Not found' });
+    res.json(c);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// HR API: Update candidate
+app.patch('/api/candidates/:id', (req, res) => {
+  try {
+    const d = req.body;
+    if (d.status) hrDbRun('UPDATE candidates SET status = ? WHERE candidate_id = ?', [d.status, req.params.id]);
+    if (d.hr_notes !== undefined) hrDbRun('UPDATE candidates SET hr_notes = ? WHERE candidate_id = ?', [d.hr_notes, req.params.id]);
+    if (d.hr_assigned) hrDbRun('UPDATE candidates SET hr_assigned = ? WHERE candidate_id = ?', [d.hr_assigned, req.params.id]);
+    if (d.mark_contacted) hrDbRun("UPDATE candidates SET contacted_at = datetime('now'), status = CASE WHEN status = 'new' THEN 'contacted' ELSE status END WHERE candidate_id = ?", [req.params.id]);
+    if (d.interview_date) hrDbRun('UPDATE candidates SET interview_date = ? WHERE candidate_id = ?', [d.interview_date, req.params.id]);
+    if (d.rejection_reason) hrDbRun('UPDATE candidates SET rejection_reason = ? WHERE candidate_id = ?', [d.rejection_reason, req.params.id]);
+    saveHRDB();
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// HR API: Delete candidate
+app.delete('/api/candidates/:id', (req, res) => {
+  try {
+    hrDbRun('DELETE FROM candidates WHERE candidate_id = ?', [req.params.id]);
+    saveHRDB();
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// HR API: Stats
+app.get('/api/hr-stats', (req, res) => {
+  try {
+    const total = hrDbGet('SELECT COUNT(*) as count FROM candidates');
+    const today = hrDbGet("SELECT COUNT(*) as count FROM candidates WHERE date(created_at) = date('now')");
+    const newC = hrDbGet("SELECT COUNT(*) as count FROM candidates WHERE status = 'new'");
+    const contacted = hrDbGet("SELECT COUNT(*) as count FROM candidates WHERE status = 'contacted'");
+    const interview = hrDbGet("SELECT COUNT(*) as count FROM candidates WHERE status = 'interview'");
+    const hired = hrDbGet("SELECT COUNT(*) as count FROM candidates WHERE status = 'hired'");
+    const rejected = hrDbGet("SELECT COUNT(*) as count FROM candidates WHERE status = 'rejected'");
+    res.json({ total: total?.count||0, today: today?.count||0, new: newC?.count||0, contacted: contacted?.count||0, interview: interview?.count||0, hired: hired?.count||0, rejected: rejected?.count||0 });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// HR API: CSV Export
+app.get('/api/hr-export/csv', (req, res) => {
+  try {
+    const rows = hrDbAll('SELECT * FROM candidates ORDER BY created_at DESC');
+    if (!rows.length) return res.send('No data');
+    const cols = Object.keys(rows[0]);
+    let csv = cols.join(',') + '\n';
+    rows.forEach(r => { csv += cols.map(c => `"${(r[c]||'').toString().replace(/"/g,'""')}"`).join(',') + '\n'; });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=zelta-hr-candidates.csv');
+    res.send(csv);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // --- Serve Admin Panel ---
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
@@ -522,6 +700,7 @@ app.get('*', (req, res) => {
 // --- Start ---
 async function start() {
   await initDB();
+  await initHRDB();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Zelta Premium] Server running on port ${PORT}`);
     console.log(`[Zelta Premium] Mini App: http://localhost:${PORT}`);
