@@ -723,8 +723,8 @@ if (BOT_TOKEN) {
   const bot = new TelegramBot(BOT_TOKEN, { polling: true });
   console.log('[Zelta Bot] Starting integrated bot...');
 
-  const BEFORE_IMG = path.join(__dirname, 'public', 'images', 'before.jpg');
-  const AFTER_IMG = path.join(__dirname, 'public', 'images', 'after.jpg');
+  const BEFORE_IMG_URL = MINI_APP_URL + '/images/before.jpg';
+  const AFTER_IMG_URL = MINI_APP_URL + '/images/after.jpg';
 
   // /start command
   bot.onText(/\/start/, async (msg) => {
@@ -734,13 +734,13 @@ if (BOT_TOKEN) {
     const isRussian = lang && lang.startsWith('ru');
 
     try {
-      // Send before/after photos
-      if (fs.existsSync(BEFORE_IMG) && fs.existsSync(AFTER_IMG)) {
-        await bot.sendMediaGroup(chatId, [
-          { type: 'photo', media: fs.createReadStream(BEFORE_IMG), caption: isRussian ? '\u{1F4F7} До — пустая комната' : '\u{1F4F7} Oldin — bo\'sh xona' },
-          { type: 'photo', media: fs.createReadStream(AFTER_IMG), caption: isRussian ? '\u{2728} После — мебель расставлена в 3D' : '\u{2728} Keyin — mebel 3D da joylashtirildi' }
-        ]);
-      }
+      // Send before/after photos using URLs
+      await bot.sendPhoto(chatId, BEFORE_IMG_URL, {
+        caption: isRussian ? '📷 До — пустая комната' : '📷 Oldin — bo\'sh xona'
+      });
+      await bot.sendPhoto(chatId, AFTER_IMG_URL, {
+        caption: isRussian ? '✨ После — мебель расставлена в 3D' : '✨ Keyin — mebel 3D da joylashtirildi'
+      });
 
       const textUz = `Assalomu alaykum${firstName ? ', ' + firstName : ''}!\n\nYuqoridagi rasmlarni ko'rdingizmi?\nBo'sh xonaga mebelni *virtual joylashtirib ko'rsatamiz* — aynan shunday natija olasiz!\n\n\u{1F381} *Birinchi 50 ta mijoz uchun bu xizmat BEPUL!*\n\nFaqat 3 ta narsa kerak:\n\u{1F4F8} Xonangiz rasmini yuboring\n\u{1F4F1} Telefon raqamingizni qoldiring\n\u{23F0} 20 daqiqada menejer aloqaga chiqadi\n\n\u{1F447} *Hoziroq boshlang:*`;
 
