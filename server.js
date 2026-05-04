@@ -692,6 +692,12 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'admin', 'index.html'));
 });
 
+// --- Bot Health Check ---
+let botRunning = false;
+app.get('/api/bot-status', (req, res) => {
+  res.json({ bot_running: botRunning, token_set: !!process.env.TELEGRAM_BOT_TOKEN, mini_app_url: process.env.MINI_APP_URL || 'not set' });
+});
+
 // --- Fallback to Mini App ---
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -720,8 +726,9 @@ const ADMIN_CHAT_ID_BOT = process.env.ADMIN_CHAT_ID;
 
 if (BOT_TOKEN) {
   const TelegramBot = require('node-telegram-bot-api');
-  const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-  console.log('[Zelta Bot] Starting integrated bot...');
+  const bot = new TelegramBot(BOT_TOKEN, { polling: { params: { timeout: 30 } } });
+  botRunning = true;
+  console.log('[Zelta Bot] Starting integrated bot with token:', BOT_TOKEN.substring(0, 10) + '...');
 
   const BEFORE_IMG_URL = MINI_APP_URL + '/images/before.jpg';
   const AFTER_IMG_URL = MINI_APP_URL + '/images/after.jpg';
