@@ -695,7 +695,180 @@ app.get('/admin', (req, res) => {
 // --- Bot Health Check ---
 let botRunning = false;
 app.get('/api/bot-status', (req, res) => {
-  res.json({ bot_running: botRunning, token_set: !!process.env.TELEGRAM_BOT_TOKEN, mini_app_url: process.env.MINI_APP_URL || 'not set' });
+  res.json({ bot_running: botRunning, token_set: !!BOT_TOKEN, mini_app_url: MINI_APP_URL });
+});
+
+// ===== TELEGRAM BOT (WEBHOOK MODE) =====
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8740837198:AAHBkd6R_Q8pVLpLdpbyd72lTJ1m-yAzgvU';
+const MINI_APP_URL = process.env.MINI_APP_URL || 'https://zeltapremium-production.up.railway.app';
+const ADMIN_CHAT_ID_BOT = process.env.ADMIN_CHAT_ID;
+const WEBHOOK_PATH = `/bot${BOT_TOKEN}`;
+
+const BEFORE_IMG_URL = MINI_APP_URL + '/images/before.jpg';
+const AFTER_IMG_URL = MINI_APP_URL + '/images/after.jpg';
+
+// Telegram API helper
+async function tgApi(method, body) {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!data.ok) console.error(`[Bot] API error ${method}:`, data.description);
+    return data;
+  } catch (err) {
+    console.error(`[Bot] API fetch error ${method}:`, err.message);
+    return { ok: false };
+  }
+}
+
+// Handle /start
+async function handleStart(msg) {
+  const chatId = msg.chat.id;
+  const firstName = msg.from.first_name || '';
+  const lang = msg.from.language_code;
+  const isRussian = lang && lang.startsWith('ru');
+
+  try {
+    await tgApi('sendPhoto', {
+      chat_id: chatId,
+      photo: BEFORE_IMG_URL,
+      caption: isRussian ? '\ud83d\udcf7 \u0414\u043e \u2014 \u043f\u0443\u0441\u0442\u0430\u044f \u043a\u043e\u043c\u043d\u0430\u0442\u0430' : '\ud83d\udcf7 Oldin \u2014 bo\'sh xona'
+    });
+    await tgApi('sendPhoto', {
+      chat_id: chatId,
+      photo: AFTER_IMG_URL,
+      caption: isRussian ? '\u2728 \u041f\u043e\u0441\u043b\u0435 \u2014 \u043c\u0435\u0431\u0435\u043b\u044c \u0440\u0430\u0441\u0441\u0442\u0430\u0432\u043b\u0435\u043d\u0430 \u0432 3D' : '\u2728 Keyin \u2014 mebel 3D da joylashtirildi'
+    });
+
+    const textUz = `Assalomu alaykum${firstName ? ', ' + firstName : ''}!\n\nYuqoridagi rasmlarni ko'rdingizmi?\nBo'sh xonaga mebelni *virtual joylashtirib ko'rsatamiz* \u2014 aynan shunday natija olasiz!\n\n\ud83c\udf81 *Birinchi 50 ta mijoz uchun bu xizmat BEPUL!*\n\nFaqat 3 ta narsa kerak:\n\ud83d\udcf8 Xonangiz rasmini yuboring\n\ud83d\udcf1 Telefon raqamingizni qoldiring\n\u23f0 20 daqiqada menejer aloqaga chiqadi\n\n\ud83d\udc47 *Hoziroq boshlang:*`;
+    const textRu = `\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435${firstName ? ', ' + firstName : ''}!\n\n\u0412\u0438\u0434\u0435\u043b\u0438 \u0444\u043e\u0442\u043e \u0432\u044b\u0448\u0435?\n\u041c\u044b *\u0432\u0438\u0440\u0442\u0443\u0430\u043b\u044c\u043d\u043e \u0440\u0430\u0441\u0441\u0442\u0430\u0432\u0438\u043c \u043c\u0435\u0431\u0435\u043b\u044c* \u0432 \u0432\u0430\u0448\u0435\u0439 \u043a\u043e\u043c\u043d\u0430\u0442\u0435 \u2014 \u0438\u043c\u0435\u043d\u043d\u043e \u0442\u0430\u043a\u043e\u0439 \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442 \u0432\u044b \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u0435!\n\n\ud83c\udf81 *\u0414\u043b\u044f \u043f\u0435\u0440\u0432\u044b\u0445 50 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432 \u044d\u0442\u0430 \u0443\u0441\u043b\u0443\u0433\u0430 \u0411\u0415\u0421\u041f\u041b\u0410\u0422\u041d\u0410!*\n\n\u041d\u0443\u0436\u043d\u043e \u0432\u0441\u0435\u0433\u043e 3 \u0432\u0435\u0449\u0438:\n\ud83d\udcf8 \u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u0444\u043e\u0442\u043e \u043a\u043e\u043c\u043d\u0430\u0442\u044b\n\ud83d\udcf1 \u041e\u0441\u0442\u0430\u0432\u044c\u0442\u0435 \u043d\u043e\u043c\u0435\u0440 \u0442\u0435\u043b\u0435\u0444\u043e\u043d\u0430\n\u23f0 \u041c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 \u0441\u0432\u044f\u0436\u0435\u0442\u0441\u044f \u0437\u0430 20 \u043c\u0438\u043d\u0443\u0442\n\n\ud83d\udc47 *\u041d\u0430\u0447\u043d\u0438\u0442\u0435 \u043f\u0440\u044f\u043c\u043e \u0441\u0435\u0439\u0447\u0430\u0441:*`;
+
+    await tgApi('sendMessage', {
+      chat_id: chatId,
+      text: isRussian ? textRu : textUz,
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: isRussian ? '\ud83c\udfe0 \u041f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u0443\u044e 3D-\u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044e' : '\ud83c\udfe0 Bepul 3D-vizualizatsiya olish', web_app: { url: MINI_APP_URL } }],
+          [{ text: isRussian ? '\ud83d\udcde \u041f\u043e\u0437\u0432\u043e\u043d\u0438\u0442\u044c \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u0443' : '\ud83d\udcde Operator bilan bog\'lanish', url: 'https://t.me/zeltacallcenter' }]
+        ]
+      }
+    });
+  } catch (err) {
+    console.error('[Bot] Start handler error:', err.message);
+    await tgApi('sendMessage', { chat_id: chatId, text: `Assalomu alaykum! Bepul 3D-vizualizatsiya: ${MINI_APP_URL}` });
+  }
+}
+
+// Handle /help
+async function handleHelp(msg) {
+  const chatId = msg.chat.id;
+  const isRussian = msg.from.language_code && msg.from.language_code.startsWith('ru');
+  const text = isRussian
+    ? '*\u041f\u043e\u043c\u043e\u0449\u044c Zelta Premium*\n\n\ud83d\udcf1 \u041d\u0430\u0447\u0430\u0442\u044c: /start\n\ud83d\udcde \u041e\u043f\u0435\u0440\u0430\u0442\u043e\u0440: +99855 520 9595\n\ud83d\udcac Telegram: @zeltacallcenter\n\ud83d\udcf8 Instagram: @zeltapremium.uz'
+    : '*Zelta Premium yordam*\n\n\ud83d\udcf1 Boshlash: /start\n\ud83d\udcde Operator: +99855 520 9595\n\ud83d\udcac Telegram: @zeltacallcenter\n\ud83d\udcf8 Instagram: @zeltapremium.uz';
+  await tgApi('sendMessage', { chat_id: chatId, text, parse_mode: 'Markdown' });
+}
+
+// Handle /operator
+async function handleOperator(msg) {
+  const chatId = msg.chat.id;
+  const isRussian = msg.from.language_code && msg.from.language_code.startsWith('ru');
+  const text = isRussian ? '\ud83d\udcde \u041f\u043e\u0437\u0432\u043e\u043d\u0438\u0442\u0435: +99855 520 9595\n\ud83d\udcac \u0418\u043b\u0438 \u043d\u0430\u043f\u0438\u0448\u0438\u0442\u0435:' : '\ud83d\udcde Qo\'ng\'iroq qiling: +99855 520 9595\n\ud83d\udcac Yoki yozing:';
+  await tgApi('sendMessage', { chat_id: chatId, text, reply_markup: { inline_keyboard: [[{ text: '\ud83d\udcac @zeltacallcenter', url: 'https://t.me/zeltacallcenter' }]] } });
+}
+
+// Handle auto-replies
+async function handleAutoReply(msg) {
+  if (!msg.text) return;
+  if (msg.text.startsWith('/')) return;
+
+  const chatId = msg.chat.id;
+  const isRussian = msg.from.language_code && msg.from.language_code.startsWith('ru');
+  const text = msg.text.toLowerCase().trim();
+
+  const greetings = ['salom', 'assalom', 'hayrli', '\u043f\u0440\u0438\u0432\u0435\u0442', '\u0437\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435', '\u0441\u0430\u043b\u043e\u043c'];
+  const priceWords = ['narx', 'qancha', 'baho', '\u0446\u0435\u043d\u0430', '\u0441\u043a\u043e\u043b\u044c\u043a\u043e', '\u0441\u0442\u043e\u0438\u043c\u043e\u0441\u0442\u044c', '\u043f\u0440\u0430\u0439\u0441'];
+  const furnitureWords = ['mebel', 'divan', 'krovat', 'shkaf', 'stol', 'stul', 'karavot', 'yotoq', '\u043c\u0435\u0431\u0435\u043b\u044c', '\u0434\u0438\u0432\u0430\u043d', '\u043a\u0440\u043e\u0432\u0430\u0442\u044c', '\u0448\u043a\u0430\u0444', '\u0441\u0442\u043e\u043b', '\u043a\u0443\u0445\u043d\u044f'];
+
+  let reply;
+  if (greetings.some(g => text.includes(g))) {
+    reply = isRussian
+      ? '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435! \ud83d\ude0a\n\n\u041c\u044b \u2014 *Zelta Premium*, \u043f\u0440\u0435\u043c\u0438\u0430\u043b\u044c\u043d\u044b\u0439 \u043c\u0435\u0431\u0435\u043b\u044c\u043d\u044b\u0439 \u0431\u0440\u0435\u043d\u0434.\n\n\u0421\u0435\u0439\u0447\u0430\u0441 \u0430\u043a\u0446\u0438\u044f: *\u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u0430\u044f 3D-\u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f* \u0434\u043b\u044f \u043f\u0435\u0440\u0432\u044b\u0445 50 \u043a\u043b\u0438\u0435\u043d\u0442\u043e\u0432!\n\n\u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u0444\u043e\u0442\u043e \u043a\u043e\u043c\u043d\u0430\u0442\u044b \u2014 \u043f\u043e\u043a\u0430\u0436\u0435\u043c, \u043a\u0430\u043a \u0431\u0443\u0434\u0435\u0442 \u0432\u044b\u0433\u043b\u044f\u0434\u0435\u0442\u044c \u043c\u0435\u0431\u0435\u043b\u044c \ud83d\udc47'
+      : 'Assalomu alaykum! \ud83d\ude0a\n\nBiz \u2014 *Zelta Premium*, premium mebel brendi.\n\nHozir aksiya: birinchi 50 ta mijozga *bepul 3D-vizualizatsiya*!\n\nXonangiz rasmini yuboring \u2014 mebelni qanday ko\'rinishini ko\'rsatamiz \ud83d\udc47';
+  } else if (priceWords.some(p => text.includes(p))) {
+    reply = isRussian
+      ? '\u0426\u0435\u043d\u044b \u0437\u0430\u0432\u0438\u0441\u044f\u0442 \u043e\u0442 \u043c\u043e\u0434\u0435\u043b\u0438 \u0438 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430.\n\n\u041d\u043e \u0441\u0435\u0439\u0447\u0430\u0441 *\u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u0430\u044f \u0443\u0441\u043b\u0443\u0433\u0430*: \u0440\u0430\u0441\u0441\u0442\u0430\u0432\u0438\u043c \u043c\u0435\u0431\u0435\u043b\u044c \u0432 \u0432\u0430\u0448\u0435\u0439 \u043a\u043e\u043c\u043d\u0430\u0442\u0435 \u0432 3D!\n\n\u041e\u0442\u043f\u0440\u0430\u0432\u044c\u0442\u0435 \u0444\u043e\u0442\u043e \u2014 \u043c\u0435\u043d\u0435\u0434\u0436\u0435\u0440 \u043f\u043e\u0434\u0431\u0435\u0440\u0451\u0442 \u0432\u0430\u0440\u0438\u0430\u043d\u0442\u044b \u0438 \u0446\u0435\u043d\u044b \ud83d\udc47'
+      : 'Narxlar model va materialga qarab farq qiladi.\n\nLekin hozir *bepul xizmat* bor: xonangizga mebelni 3D da joylashtirib ko\'rsatamiz!\n\nXonangiz rasmini yuboring \u2014 menejer variant va narxlarni taklif qiladi \ud83d\udc47';
+  } else if (furnitureWords.some(f => text.includes(f))) {
+    reply = isRussian
+      ? '\u041e\u0442\u043b\u0438\u0447\u043d\u044b\u0439 \u0432\u044b\u0431\u043e\u0440! \u0423 \u043d\u0430\u0441 \u0448\u0438\u0440\u043e\u043a\u0438\u0439 \u0430\u0441\u0441\u043e\u0440\u0442\u0438\u043c\u0435\u043d\u0442 \u043f\u0440\u0435\u043c\u0438\u0430\u043b\u044c\u043d\u043e\u0439 \u043c\u0435\u0431\u0435\u043b\u0438.\n\n*\u0411\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u043e* \u043f\u043e\u043a\u0430\u0436\u0435\u043c, \u043a\u0430\u043a \u043c\u0435\u0431\u0435\u043b\u044c \u0431\u0443\u0434\u0435\u0442 \u0441\u043c\u043e\u0442\u0440\u0435\u0442\u044c\u0441\u044f \u0432 \u0432\u0430\u0448\u0435\u0439 \u043a\u043e\u043c\u043d\u0430\u0442\u0435! \ud83d\udc47'
+      : 'Ajoyib tanlov! Bizda premium mebellarning keng assortimenti bor.\n\nMebelni xonangizda qanday ko\'rinishini *bepul* ko\'rsatamiz! \ud83d\udc47';
+  } else {
+    reply = isRussian
+      ? '\u0421\u043f\u0430\u0441\u0438\u0431\u043e \u0437\u0430 \u0441\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435!\n\n\u041c\u044b \u043f\u0440\u0435\u0434\u043b\u0430\u0433\u0430\u0435\u043c *\u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u0443\u044e 3D-\u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044e* \u043c\u0435\u0431\u0435\u043b\u0438 \u0432 \u0432\u0430\u0448\u0435\u0439 \u043a\u043e\u043c\u043d\u0430\u0442\u0435.\n\n\u041d\u0430\u0436\u043c\u0438\u0442\u0435 \u043a\u043d\u043e\u043f\u043a\u0443 \u043d\u0438\u0436\u0435 \ud83d\udc47'
+      : 'Xabaringiz uchun rahmat!\n\nBiz xonangizga mebelni *bepul 3D-vizualizatsiya* qilib ko\'rsatamiz.\n\nQuyidagi tugmani bosing \ud83d\udc47';
+  }
+
+  await tgApi('sendMessage', {
+    chat_id: chatId,
+    text: reply,
+    parse_mode: 'Markdown',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: isRussian ? '\ud83c\udfe0 \u0411\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u0430\u044f 3D-\u0432\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0446\u0438\u044f' : '\ud83c\udfe0 Bepul 3D-vizualizatsiya', web_app: { url: MINI_APP_URL } }],
+        [{ text: isRussian ? '\ud83d\udcde \u0421\u0432\u044f\u0437\u0430\u0442\u044c\u0441\u044f \u0441 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u043e\u043c' : '\ud83d\udcde Operator bilan bog\'lanish', url: 'https://t.me/zeltacallcenter' }]
+      ]
+    }
+  });
+}
+
+// Handle web_app_data
+async function handleWebAppData(msg) {
+  const chatId = msg.chat.id;
+  try {
+    const data = JSON.parse(msg.web_app_data.data);
+    if (data.type === 'lead_submitted') {
+      const isRussian = data.language === 'ru';
+      await tgApi('sendMessage', { chat_id: chatId, text: isRussian ? '\u2705 \u0412\u0430\u0448\u0430 \u0437\u0430\u044f\u0432\u043a\u0430 \u043f\u0440\u0438\u043d\u044f\u0442\u0430! \u0421\u043f\u0435\u0446\u0438\u0430\u043b\u0438\u0441\u0442 \u0441\u0432\u044f\u0436\u0435\u0442\u0441\u044f \u0432 \u0442\u0435\u0447\u0435\u043d\u0438\u0435 20 \u043c\u0438\u043d\u0443\u0442.' : '\u2705 So\'rovingiz qabul qilindi! 20 daqiqa ichida bog\'lanamiz.' });
+      if (ADMIN_CHAT_ID_BOT) {
+        await tgApi('sendMessage', { chat_id: ADMIN_CHAT_ID_BOT, text: `\ud83d\udd14 *Yangi lead!*\n\ud83d\udcde ${data.phone || 'N/A'}\n\u23f0 20 daqiqa SLA!`, parse_mode: 'Markdown' });
+      }
+    }
+  } catch (err) { console.error('[Bot] web_app_data error:', err); }
+}
+
+// Process incoming update from webhook
+function processUpdate(update) {
+  try {
+    if (update.message) {
+      const msg = update.message;
+      if (msg.web_app_data) {
+        handleWebAppData(msg);
+      } else if (msg.text) {
+        if (msg.text === '/start' || msg.text.startsWith('/start ')) {
+          handleStart(msg);
+        } else if (msg.text === '/help') {
+          handleHelp(msg);
+        } else if (msg.text === '/operator') {
+          handleOperator(msg);
+        } else {
+          handleAutoReply(msg);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Bot] processUpdate error:', err.message);
+  }
+}
+
+// Webhook endpoint - receives updates from Telegram
+app.post(WEBHOOK_PATH, express.json(), (req, res) => {
+  processUpdate(req.body);
+  res.sendStatus(200);
 });
 
 // --- Fallback to Mini App ---
@@ -707,10 +880,21 @@ app.get('*', (req, res) => {
 async function start() {
   await initDB();
   await initHRDB();
-  app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, '0.0.0.0', async () => {
     console.log(`[Zelta Premium] Server running on port ${PORT}`);
     console.log(`[Zelta Premium] Mini App: http://localhost:${PORT}`);
     console.log(`[Zelta Premium] Admin Panel: http://localhost:${PORT}/admin`);
+
+    // Set webhook
+    const webhookUrl = `${MINI_APP_URL}${WEBHOOK_PATH}`;
+    console.log(`[Zelta Bot] Setting webhook to: ${webhookUrl}`);
+    const result = await tgApi('setWebhook', { url: webhookUrl, drop_pending_updates: false });
+    if (result.ok) {
+      botRunning = true;
+      console.log('[Zelta Bot] Webhook set successfully!');
+    } else {
+      console.error('[Zelta Bot] Failed to set webhook:', result.description);
+    }
   });
 }
 
@@ -718,135 +902,3 @@ start().catch(err => {
   console.error('[Zelta] Failed to start:', err);
   process.exit(1);
 });
-
-// ===== INTEGRATED TELEGRAM BOT =====
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const MINI_APP_URL = process.env.MINI_APP_URL || 'https://zeltapremium-production.up.railway.app';
-const ADMIN_CHAT_ID_BOT = process.env.ADMIN_CHAT_ID;
-
-if (BOT_TOKEN) {
-  const TelegramBot = require('node-telegram-bot-api');
-  const bot = new TelegramBot(BOT_TOKEN, { polling: { params: { timeout: 30 } } });
-  botRunning = true;
-  console.log('[Zelta Bot] Starting integrated bot with token:', BOT_TOKEN.substring(0, 10) + '...');
-
-  const BEFORE_IMG_URL = MINI_APP_URL + '/images/before.jpg';
-  const AFTER_IMG_URL = MINI_APP_URL + '/images/after.jpg';
-
-  // /start command
-  bot.onText(/\/start/, async (msg) => {
-    const chatId = msg.chat.id;
-    const firstName = msg.from.first_name || '';
-    const lang = msg.from.language_code;
-    const isRussian = lang && lang.startsWith('ru');
-
-    try {
-      // Send before/after photos using URLs
-      await bot.sendPhoto(chatId, BEFORE_IMG_URL, {
-        caption: isRussian ? '📷 До — пустая комната' : '📷 Oldin — bo\'sh xona'
-      });
-      await bot.sendPhoto(chatId, AFTER_IMG_URL, {
-        caption: isRussian ? '✨ После — мебель расставлена в 3D' : '✨ Keyin — mebel 3D da joylashtirildi'
-      });
-
-      const textUz = `Assalomu alaykum${firstName ? ', ' + firstName : ''}!\n\nYuqoridagi rasmlarni ko'rdingizmi?\nBo'sh xonaga mebelni *virtual joylashtirib ko'rsatamiz* — aynan shunday natija olasiz!\n\n\u{1F381} *Birinchi 50 ta mijoz uchun bu xizmat BEPUL!*\n\nFaqat 3 ta narsa kerak:\n\u{1F4F8} Xonangiz rasmini yuboring\n\u{1F4F1} Telefon raqamingizni qoldiring\n\u{23F0} 20 daqiqada menejer aloqaga chiqadi\n\n\u{1F447} *Hoziroq boshlang:*`;
-
-      const textRu = `Здравствуйте${firstName ? ', ' + firstName : ''}!\n\nВидели фото выше?\nМы *виртуально расставим мебель* в вашей комнате — именно такой результат вы получите!\n\n\u{1F381} *Для первых 50 клиентов эта услуга БЕСПЛАТНА!*\n\nНужно всего 3 вещи:\n\u{1F4F8} Отправьте фото комнаты\n\u{1F4F1} Оставьте номер телефона\n\u{23F0} Менеджер свяжется за 20 минут\n\n\u{1F447} *Начните прямо сейчас:*`;
-
-      await bot.sendMessage(chatId, isRussian ? textRu : textUz, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: isRussian ? '\u{1F3E0} Получить бесплатную 3D-визуализацию' : '\u{1F3E0} Bepul 3D-vizualizatsiya olish', web_app: { url: MINI_APP_URL } }],
-            [{ text: isRussian ? '\u{1F4DE} Позвонить оператору' : '\u{1F4DE} Operator bilan bog\'lanish', url: 'https://t.me/zeltacallcenter' }]
-          ]
-        }
-      });
-    } catch (err) {
-      console.error('[Zelta Bot] Start error:', err.message);
-      await bot.sendMessage(chatId, `Assalomu alaykum! Bepul 3D-vizualizatsiya uchun oching: ${MINI_APP_URL}`);
-    }
-  });
-
-  // /help command
-  bot.onText(/\/help/, async (msg) => {
-    const chatId = msg.chat.id;
-    const isRussian = msg.from.language_code && msg.from.language_code.startsWith('ru');
-    const text = isRussian
-      ? '*Помощь Zelta Premium*\n\n\u{1F4F1} Начать: /start\n\u{1F4DE} Оператор: +99855 520 9595\n\u{1F4AC} Telegram: @zeltacallcenter\n\u{1F4F8} Instagram: @zeltapremium.uz'
-      : '*Zelta Premium yordam*\n\n\u{1F4F1} Boshlash: /start\n\u{1F4DE} Operator: +99855 520 9595\n\u{1F4AC} Telegram: @zeltacallcenter\n\u{1F4F8} Instagram: @zeltapremium.uz';
-    await bot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
-  });
-
-  // /operator command
-  bot.onText(/\/operator/, async (msg) => {
-    const chatId = msg.chat.id;
-    const isRussian = msg.from.language_code && msg.from.language_code.startsWith('ru');
-    const text = isRussian ? '\u{1F4DE} Позвоните: +99855 520 9595\n\u{1F4AC} Или напишите:' : '\u{1F4DE} Qo\'ng\'iroq qiling: +99855 520 9595\n\u{1F4AC} Yoki yozing:';
-    await bot.sendMessage(chatId, text, { reply_markup: { inline_keyboard: [[{ text: '\u{1F4AC} @zeltacallcenter', url: 'https://t.me/zeltacallcenter' }]] } });
-  });
-
-  // web_app_data
-  bot.on('web_app_data', async (msg) => {
-    const chatId = msg.chat.id;
-    try {
-      const data = JSON.parse(msg.web_app_data.data);
-      if (data.type === 'lead_submitted') {
-        const isRussian = data.language === 'ru';
-        await bot.sendMessage(chatId, isRussian ? '\u{2705} Ваша заявка принята! Специалист свяжется в течение 20 минут.' : '\u{2705} So\'rovingiz qabul qilindi! 20 daqiqa ichida bog\'lanamiz.');
-        if (ADMIN_CHAT_ID_BOT) {
-          await bot.sendMessage(ADMIN_CHAT_ID_BOT, `\u{1F514} *Yangi lead!*\n\u{1F4DE} ${data.phone || 'N/A'}\n\u{23F0} 20 daqiqa SLA!`, { parse_mode: 'Markdown' });
-        }
-      }
-    } catch (err) { console.error('[Bot] web_app_data error:', err); }
-  });
-
-  // Auto-replies for common messages
-  bot.on('message', async (msg) => {
-    if (msg.text && msg.text.startsWith('/')) return;
-    if (msg.web_app_data) return;
-    if (!msg.text) return;
-
-    const chatId = msg.chat.id;
-    const isRussian = msg.from.language_code && msg.from.language_code.startsWith('ru');
-    const text = msg.text.toLowerCase().trim();
-
-    const greetings = ['salom', 'assalom', 'hayrli', 'привет', 'здравствуйте', 'салом'];
-    const priceWords = ['narx', 'qancha', 'baho', 'цена', 'сколько', 'стоимость', 'прайс'];
-    const furnitureWords = ['mebel', 'divan', 'krovat', 'shkaf', 'stol', 'stul', 'karavot', 'yotoq', 'мебель', 'диван', 'кровать', 'шкаф', 'стол', 'кухня'];
-
-    let reply;
-    if (greetings.some(g => text.includes(g))) {
-      reply = isRussian
-        ? 'Здравствуйте! \u{1F60A}\n\nМы — *Zelta Premium*, премиальный мебельный бренд.\n\nСейчас акция: *бесплатная 3D-визуализация* для первых 50 клиентов!\n\nОтправьте фото комнаты — покажем, как будет выглядеть мебель \u{1F447}'
-        : 'Assalomu alaykum! \u{1F60A}\n\nBiz — *Zelta Premium*, premium mebel brendi.\n\nHozir aksiya: birinchi 50 ta mijozga *bepul 3D-vizualizatsiya*!\n\nXonangiz rasmini yuboring — mebelni qanday ko\'rinishini ko\'rsatamiz \u{1F447}';
-    } else if (priceWords.some(p => text.includes(p))) {
-      reply = isRussian
-        ? 'Цены зависят от модели и материала.\n\nНо сейчас *бесплатная услуга*: расставим мебель в вашей комнате в 3D!\n\nОтправьте фото — менеджер подберёт варианты и цены \u{1F447}'
-        : 'Narxlar model va materialga qarab farq qiladi.\n\nLekin hozir *bepul xizmat* bor: xonangizga mebelni 3D da joylashtirib ko\'rsatamiz!\n\nXonangiz rasmini yuboring — menejer variant va narxlarni taklif qiladi \u{1F447}';
-    } else if (furnitureWords.some(f => text.includes(f))) {
-      reply = isRussian
-        ? 'Отличный выбор! У нас широкий ассортимент премиальной мебели.\n\n*Бесплатно* покажем, как мебель будет смотреться в вашей комнате! \u{1F447}'
-        : 'Ajoyib tanlov! Bizda premium mebellarning keng assortimenti bor.\n\nMebelni xonangizda qanday ko\'rinishini *bepul* ko\'rsatamiz! \u{1F447}';
-    } else {
-      reply = isRussian
-        ? 'Спасибо за сообщение!\n\nМы предлагаем *бесплатную 3D-визуализацию* мебели в вашей комнате.\n\nНажмите кнопку ниже \u{1F447}'
-        : 'Xabaringiz uchun rahmat!\n\nBiz xonangizga mebelni *bepul 3D-vizualizatsiya* qilib ko\'rsatamiz.\n\nQuyidagi tugmani bosing \u{1F447}';
-    }
-
-    await bot.sendMessage(chatId, reply, {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: isRussian ? '\u{1F3E0} Бесплатная 3D-визуализация' : '\u{1F3E0} Bepul 3D-vizualizatsiya', web_app: { url: MINI_APP_URL } }],
-          [{ text: isRussian ? '\u{1F4DE} Связаться с оператором' : '\u{1F4DE} Operator bilan bog\'lanish', url: 'https://t.me/zeltacallcenter' }]
-        ]
-      }
-    });
-  });
-
-  bot.on('polling_error', (err) => console.error('[Bot] Polling error:', err.message));
-  console.log('[Zelta Bot] Integrated bot is running!');
-} else {
-  console.log('[Zelta Bot] No TELEGRAM_BOT_TOKEN set, bot disabled');
-}
